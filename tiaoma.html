@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>跳马问题</title>
+</head>
+<body>
+    <form>
+        跳马问题：<br>
+        有一m行、n列的棋盘，一马放在棋盘中任意位置，马按中国象棋跳法，从初始位置起跳，<br>跳至边界后返回，求所有能返回初始位置的周游路线。
+        <br><br>
+        行数:
+        <input type="text" id="row" value="" onchange="rowChange()">
+        <br><br>
+        列数:
+        <input type="text" id="column" value="" onchange="columnChange()">
+        <br><br>
+        坐标x：
+        <select id="x0"></select>
+        坐标y：
+        <select id="y0"></select>
+        <script>
+        //用户输入行数，根据行数确定起始y坐标范围
+        function rowChange(){
+            var limit=parseInt(document.getElementById("row").value);
+            var objSelectNow=document.getElementById("y0");
+            var inner="<option value='0'>0</option>";
+            objSelectNow.innerHTML=inner;
+            for (var i=1;i<limit;i++){
+                var objOption = document.createElement("OPTION");
+                objOption.text= i;
+                objOption.value=i;
+                objSelectNow.options.add(objOption);
+            }
+        }
+        //用户输入列数，根据行数确定起始x坐标范围
+        function columnChange(){
+            var limit=parseInt(document.getElementById("column").value);
+            var objSelectNow=document.getElementById("x0");
+            var inner="<option value='0'>0</option>";
+            objSelectNow.innerHTML=inner;
+            for (var i=1;i<limit;i++){
+                var objOption = document.createElement("OPTION");
+                objOption.text= i;
+                objOption.value=i;
+                objSelectNow.options.add(objOption);
+            }
+        }
+        </script>
+        <br><br>
+        <input type="button" id="cal" value="确定" onclick="calculatePaths()">
+        </form> 
+        <br>
+    <table border="1" WIDTH=600px HEIGHT=100px>
+        <tr>
+        <td>
+        结果:<br>
+        <p id="result" width=400px>
+        </p>                
+        </td>
+        </tr>
+    </table>
+<script>
+var change=[[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];//所有的走法
+var step=1;//步数
+var count=0;//路径条数
+var xstart;var ystart;var m;var n;//起始点、棋盘的行列数
+var record=new Array();//棋盘上路径的标记
+var p=new Array;//路径
+var paths=new Array;//所有的路径
+//计算所有路径并显示
+function calculatePaths(){
+    paths.splice(0,paths.length);
+    count=0;
+    xstart=parseInt(document.getElementById("x0").value);
+    ystart =parseInt(document.getElementById("y0").value);
+    m=parseInt(document.getElementById("row").value);
+    n=parseInt(document.getElementById("column").value);
+    var path=new Array;
+    for (var i=0;i<m;i++){
+        record[i]=new Array();
+        for (var j=0;j<n;j++){
+            record[i][j]=0;
+        }
+    }
+    path=pathResult();
+    if(count==0)//打印路线
+       alert("此条件下没有路径！");
+    else{
+        document.getElementById("result").innerHTML = "一共有 " + count + "条路线" + "<br><br>";
+        for (var i=0;i<count;i++){
+        for (var j=1;j<path[i].length;j++){
+            if (j==path[i].length-1){
+                document.getElementById("result").innerHTML+=path[i][j]+"<br>";
+            } else{
+                document.getElementById("result").innerHTML+=path[i][j] + "->";
+            }
+        }
+        } 
+    }
+   
+}
+//判断是否到达了边界
+function checkBorder(){
+    for (var i=0;i<m;i++){
+        if (record[i][0]!=0||record[i][n-1]!=0){
+            return true;
+        }
+    }
+    for (var i=0;i<n;i++){
+        if (record[0][i]!=0||record[m-1][i]!=0){
+            return true;
+        }
+    }
+    return false;
+}
+//判断下一个点有没有走过或者超出边界
+function checkPoint(x,y,i){
+    if ((x+change[i][0])<m&&(x+change[i][0])>=0&&y+change[i][1]<n&&y+change[i][1]>=0){
+        var xtemp=0;
+        var ytemp=0;
+        xtemp=x+change[i][0];
+        ytemp=y+change[i][1];
+        if (record[xtemp][ytemp]==0||(x+change[i][0]==xstart&&y+change[i][1]==ystart)){
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+//计算路线
+function calculate(x,y,t){
+    if (x==xstart&&y==ystart&&t!=1){
+        if (checkBorder()){
+            var temp = new Array();
+            count++;
+            for (var i=1;i<step;i++){
+                var xtemp=p[i][0];
+                var ytemp=p[i][1];
+                temp[i]=new Array();
+                temp[i][0]=xtemp;temp[i][1]=ytemp;
+            }
+            temp[step]=new Array();
+            temp[step][0]=xstart;temp[step][1]=ystart;
+            paths.push(temp);
+        }
+    }
+    else{
+        for (var i=0;i<8;i++){
+            if (checkPoint(x,y,i)){
+                p[step]=new Array();
+                p[step][0]=x;p[step][1]=y;
+                record[x][y]=step;
+                step++;
+                calculate(x+change[i][0],y+change[i][1],step);
+                step--;
+                record[x][y]=0;
+                p[step][0]=0;p[step][1]=0;
+            }
+        }
+    }
+}
+function pathResult(){
+    calculate(xstart,ystart,step);
+    return paths;
+}
+    </script>
+</body>
+
+</html>
