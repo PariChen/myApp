@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html>  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>姓名绘制</title>  
+</head>  
+<body>  
+请选择您的*.gen格式文件：<br>
+<p id="result"></p>
+<input type="file" id="file" onchange="handleFiles(this.files)"/><br><br>
+<canvas id="c" width="900" height="300" style="border:1px solid#c3c3c3;"></canvas>  
+<script>  
+var data;
+
+function handleFiles(files) {
+    if (files.length) {
+        var file = files[0];
+        var reader = new FileReader();
+        var drawing=document.getElementById("c");  
+        var context=drawing.getContext("2d");  
+        reader.readAsText(file);//读取GEN文件内容至字符串
+        reader.onload=function(f){ 
+            data=this.result;
+            var strs1= new Array();       
+            strs1=data.split("END"); //将字符串以行为单位分割
+            for (var i=0;i<strs1.length ;i++ ){
+                var strs2= new Array(); 
+                strs2=(strs1[i]).split("\n"); //将行以点为单位分割
+                context.beginPath();//依次绘制线条
+                for(var j=1;j<strs2.length;j++){
+                    var strs3= new Array(); 
+                    strs3=strs2[j].split(","); 
+                    if(j==1){
+                        context.moveTo(parseFloat(strs3[0])*10,320-parseFloat(strs3[1])*10);
+                    }else{
+                        context.lineTo(parseFloat(strs3[0])*10,320-parseFloat(strs3[1])*10);
+                    }
+                }
+                context.stroke();
+            } 
+       }
+
+    }
+}
+</script>  
+</body>  
+</html>  

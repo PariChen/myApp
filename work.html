@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html>
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>最佳工作序列</title>  
+</head>  
+<body>
+<div class="text" style=" text-align:center;">请填写下表相关信息：</div>
+<table border="3" align="center">
+<tr>
+  <td>任务</td>
+  <td>费时</td>
+  <td>最后完成期限</td>
+  <td>价值</td>
+</tr>
+<tr>
+  <td>1</td>
+  <td><input type="text" id="t0"></td>
+  <td><input type="text" id="l0"></td>
+  <td><input type="text" id="v0"></td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><input type="text" id="t1"></td>
+  <td><input type="text" id="l1"></td>
+  <td><input type="text" id="v1"></td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><input type="text" id="t2"></td>
+  <td><input type="text" id="l2"></td>
+  <td><input type="text" id="v2"></td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><input type="text" id="t3"></td>
+  <td><input type="text" id="l3"></td>
+  <td><input type="text" id="v3"></td>
+</tr>
+</table><br>
+<div align="center"><button onClick="calculate()">计算</button></div><br>
+<table border="3" WIDTH=400px HEIGHT=100px align="center">
+<tr>
+  <td>结果：
+    <p id="result" width=400px>
+    </p> 
+  </td>
+</tr>
+</table>
+<script>
+
+function calculate(){
+  var completed=[0,0,0,0];
+  var time=new Array;//费时
+  var limit=new Array;//最后完成期限
+  var value=new Array;//价值
+  for(var i=0;i<4;i++){ //将参数储存到数组中
+    time[i]=parseInt(document.getElementById("t"+i).value);
+    limit[i]=parseInt(document.getElementById("l"+i).value);
+    value[i]=parseInt(document.getElementById("v"+i).value);
+  }
+  var best=new Array;//最佳工作序列
+  var sValue=0;//最大价值
+  for(var i=0;i<4;i++){
+    outerloop:
+    for(var j=0;j<4;j++){
+      innerloop:
+      for(var k=0;k<4;k++){
+        for(var u=0;u<4;u++){
+          if(i!=j&&i!=k&&i!=u&&j!=k&&j!=u&&k!=u){ //遍历，计算出所有可能的排序
+            var tempWork=[i,j,k,u];
+            var tempResult=new Array;
+            var tempCompleted=[0,0,0,0];
+            var tempTime=0;
+            var tempValue=0;
+            for(var x=0;x<4;x++){
+              tempTime+=time[tempWork[x]];
+              if(tempTime<=limit[tempWork[x]]) {//判断排序方式有没有超出最后完成期限，将不超出期限的工作依次存入临时工作序列
+                tempValue+=value[tempWork[x]];
+                tempCompleted[x]=1;
+                  if(x==3){//若都不超出期限，存储临时工作序列和当前价值
+                  for(var p=0;p<4;p++){
+                    tempResult.push(tempWork[p]+1);
+                  }
+                  if(tempValue>sValue){//判断当前是否为最大价值
+                    sValue=tempValue;
+                    best.length=0;
+                    best.push(tempResult);
+                  }
+                }
+              }
+              else{//若部分超出期限，存储临时工作序列和当前价值
+                var y=0;
+                while(tempCompleted[y]!=0){
+                  tempResult.push(tempWork[y]+1);
+                  y++;
+                }
+                if(tempValue>sValue){//判断当前是否为最大价值
+                  sValue=tempValue;
+                  best.length=0;
+                  best.push(tempResult);
+                }
+                if(x==2) break innerloop;
+                else if(x==1)  break outerloop;
+              }
+            }
+
+          }
+        }
+      }
+    }
+  }
+  if(tempValue>0){//打印最大价值和最佳序列
+    document.getElementById("result").innerHTML="最大价值为"+sValue+" , 最佳工作序列为：";
+  for(var x=0;x<best[0].length;x++){
+        document.getElementById("result").innerHTML+=(best[0][x])+"  ";
+      }
+  }else{
+    alert("没有符合条件的结果！");
+  }
+  
+}
+</script>
+
+</body>
+</html>
