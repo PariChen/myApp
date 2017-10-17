@@ -19,7 +19,7 @@ function handleFiles(files) {
         var drawing=document.getElementById("c");  
         var context=drawing.getContext("2d");  
         context.clearRect(0,0,drawing.width,drawing.height); 
-        reader.readAsText(file);//读取GEN文件内容至字符串
+        reader.readAsText(file);//读取文件内容至字符串
         reader.onload=function(f){ 
             data=this.result;
             var strs1= new Array();       
