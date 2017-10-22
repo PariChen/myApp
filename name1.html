@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html>  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>姓名变换</title>  
+</head>  
+<body>  
+<div class="text" style=" text-align:center;"><br>请选择您的编码文件：<br><br></div>
+<div align="center"><input type="file" id="inputfile" multiple="multiple" onchange="handleFiles(this.files)"/><br><br></div>
+<div align="center"><canvas id="c0" width="300" height="300" style="border:1px solid#c3c3c3;"></canvas>
+                    <canvas id="c1" width="300" height="300" style="border:1px solid#c3c3c3;"></canvas><br><br></div>
+<div align="center"><table border="3">
+    <style>td{width:300px;}</style>
+    <tr>
+       <td><div align="center"><button onClick="calculate1()">左斜变换</button></div></td>
+                            <td><div align="center"><button onClick="calculate2()">耸肩变换</button></div></td>
+    </tr>
+    <tr>
+        <td><div class="text" style=" text-align:center;">请输入缩放比例：</div>
+            <div style="text-align:center"><input type="text" id="scale"></div>
+            <div align="center"><button onClick="calculate3()">比例变换</button></div></td>
+        <td><div class="text" style=" text-align:center;">请输入旋转角度（°，逆时针）：</div>
+            <div style="text-align:center"><input type="text" id="angle" align="center"></div>
+            <div align="center"><button onClick="calculate4()">旋转变换</button></div></td>
+    </tr>
+    <tr>
+        <td><div class="text" style=" text-align:center;">请选择对称方式（水平或垂直）：</div>
+            <div style="text-align:center"><select id="axis">
+            <option value="x_axis">水平</option>
+            <option value="y_axis">垂直</option>
+            </select></div>
+            <div align="center"><button onClick="calculate5()">对称变换</button></div></td>
+        <td><div class="text" style=" text-align:center;">请输入x方向平移距离：</div>
+            <div style="text-align:center"><input type="text" id="x_distance"></div>
+            <div class="text" style=" text-align:center;">请输入y方向平移距离：</div>
+            <div style="text-align:center"><input type="text" id="y_distance"></div>
+            <div align="center"><button onClick="calculate6()">平移变换</button></div></td>
+                        
+     </tr>
+</table>
+</div>
+<script>  
+var data;
+var character= new Array(); 
+function handleFiles(files) {
+    character.length=0;
+    for(var n=0;n<files.length;n++) {
+        var flag=0;
+        var file = files[n];
+        var reader = new FileReader();
+        reader.readAsText(file);//读取文件内容至字符串
+        reader.onload=function(f){
+            data=this.result;
+            var drawing=document.getElementById("c"+flag);//选择相应画布  
+            var context=drawing.getContext("2d"); 
+            context.clearRect(0,0,drawing.width,drawing.height);  
+            var strs1=data.split("END"); //将字符串以行为单位分割
+            for (var i=0;i<strs1.length-1 ;i++ ){
+                var strs2=(strs1[i]).split("\n"); //将行以点为单位分割
+                var temp=new Array();
+                context.beginPath();//依次绘制线条
+                for(var j=1;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    context.lineTo(parseFloat(strs3[0])*10,300-parseFloat(strs3[1])*10);
+                    temp.push(parseFloat(strs3[0]));
+                    temp.push(parseFloat(strs3[1]));
+                }
+                context.stroke();
+                character.push(temp);
+            } 
+            flag++;
+       }
+    }
+}
+
+function calculate1(){//左斜变换
+    var k=0; 
+    if(character.length==0) alert("请选择编码文件！")
+    for(var i=0;i<character.length;i++){
+        if(!isNaN(character[i][0])){
+            var drawing=document.getElementById("c"+k);  
+            var context=drawing.getContext("2d"); 
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            k++;
+        }
+        context.beginPath();
+        for(var j=0;j<character[i].length;j++){
+            var tempX=character[i][2*j]-character[i][2*j+1]*0.2679+4;
+            var tempY=character[i][2*j+1];
+            context.lineTo(tempX*10,300-tempY*10);
+        }
+        context.stroke();
+    }  
+}
+function calculate2(){//比例变换
+    var k=0; 
+    if(character.length==0) alert("请选择编码文件！")
+    for(var i=0;i<character.length;i++){
+        if(!isNaN(character[i][0])){
+            var drawing=document.getElementById("c"+k);  
+            var context=drawing.getContext("2d"); 
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            k++;
+        }
+        context.beginPath();
+        for(var j=0;j<character[i].length;j++){
+            var tempX=character[i][2*j];
+            var tempY=character[i][2*j+1]-character[i][2*j]*(-0.2679)-4;
+            context.lineTo(tempX*10,300-tempY*10);
+        }
+        context.stroke();
+    }  
+}
+function calculate3(){//比例变换
+    var k=0; 
+    if(character.length==0) alert("请选择编码文件！")
+    var n=parseFloat(document.getElementById("scale").value);
+    for(var i=0;i<character.length;i++){
+        if(!isNaN(character[i][0])){
+            var drawing=document.getElementById("c"+k);  
+            var context=drawing.getContext("2d"); 
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            k++;
+        }
+        context.beginPath();
+        for(var j=0;j<character[i].length;j++){
+            var tempX=n*character[i][2*j];
+            var tempY=n*character[i][2*j+1];
+            context.lineTo(tempX*10,300-tempY*10);
+        }
+        context.stroke();
+    }  
+}
+function calculate4(){//旋转变换
+    var k=0; 
+    if(character.length==0) alert("请选择编码文件！")
+    var a=parseFloat(document.getElementById("angle").value)*3.14/360;
+    for(var i=0;i<character.length;i++){
+        if(!isNaN(character[i][0])){
+            var drawing=document.getElementById("c"+k);  
+            var context=drawing.getContext("2d"); 
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            k++;
+        }
+        context.beginPath();
+        for(var j=0;j<character[i].length;j++){
+            var tempX0=character[i][2*j]-15;
+            var tempY0=character[i][2*j+1]-15;
+            var tempX=tempX0*Math.cos(a)-tempY0*Math.sin(a)+15;
+            var tempY=tempX0*Math.sin(a)+tempY0*Math.cos(a)+15;
+            context.lineTo(tempX*10,300-tempY*10);
+        }
+        context.stroke();
+    }  
+}
+function calculate5(){//对称变换
+    var k=0; 
+    if(character.length==0) alert("请选择编码文件！")
+    var mySelect = document.getElementById("axis");
+    for(var i=0;i<character.length;i++){
+        if(!isNaN(character[i][0])){
+            var drawing=document.getElementById("c"+k);  
+            var context=drawing.getContext("2d"); 
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            k++;
+        }
+        context.beginPath();
+        for(var j=0;j<character[i].length;j++){
+            var tempX=character[i][2*j];
+            var tempY=character[i][2*j+1];
+            if(mySelect.options[0].selected){
+                context.lineTo(300-tempX*10,300-tempY*10);
+            }else{
+                context.lineTo(tempX*10,tempY*10);
+            }
+        }
+        context.stroke();
+    }  
+}
+function calculate6(){//平移变换
+    var k=0; 
+    if(character.length==0) alert("请选择编码文件！")
+    var x=parseFloat(document.getElementById("x_distance").value);
+    var y=parseFloat(document.getElementById("y_distance").value);    
+    for(var i=0;i<character.length;i++){
+        if(!isNaN(character[i][0])){
+            var drawing=document.getElementById("c"+k);  
+            var context=drawing.getContext("2d"); 
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            k++;
+        }
+        context.beginPath();
+        for(var j=0;j<character[i].length;j++){
+            var tempX=character[i][2*j]+x;
+            var tempY=character[i][2*j+1]+y;
+            context.lineTo(tempX*10,300-tempY*10);
+        }
+        context.stroke();
+    }  
+}
+</script>  
+</body>  
+</html>  
