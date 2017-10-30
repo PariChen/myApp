@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html>  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>地图绘制</title>  
+</head>  
+<body>  
+    <div align="center">请选择您的*.gen格式地图数据文件：<br><br></div>
+<div align="center"><input type="file" id="file" onchange="handleFiles(this.files)"/><br><br></div>
+<div align="center"><button onClick="calculate1()">墨卡托投影</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onClick="calculate3()">（中国地图）兰伯特投影</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onClick="calculate2()">绘制北京至巴黎的大圆航线</button></div>
+<div align="center"><canvas id="c" width="1200" height="1200" style="border:1px solid#c3c3c3;"></canvas></div> 
+<script>  
+var data;
+var flag1=0;
+var border= new Array(); 
+var drawing=document.getElementById("c");//选择画布  
+var context=drawing.getContext("2d"); 
+function handleFiles(files) {
+    border.length=0;
+    var t1=0;var t2=0;var t3=0;
+    for(var n=0;n<files.length;n++) {
+        var flag=0;
+        var file = files[n];
+        var reader = new FileReader();
+        reader.readAsText(file);//读取文件内容至字符串
+        reader.onload=function(f){
+            data=this.result;
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            context.lineWidth = 1;  
+            context.strokeStyle = "#000000"; 
+            var strs1=data.split("END"); //将字符串以行为单位分割
+            if(strs1.length>1000){
+                t1=3.5;t2=600;t3=600;
+            }else{
+                t1=11;t2=-500;t3=900;
+            }
+            for (var i=0;i<strs1.length-1 ;i++ ){
+                var strs2=(strs1[i]).split("\n"); //将行以点为单位分割
+                var temp=new Array();
+                context.beginPath();//依次绘制线条
+                if(i==0){
+                    for(var j=1;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    context.lineTo(parseFloat(strs3[0])*t1+t2,t3-parseFloat(strs3[1])*t1);
+                    temp.push(parseFloat(strs3[0]));
+                    temp.push(parseFloat(strs3[1]));
+                }
+                }else{
+                for(var j=2;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    context.lineTo(parseFloat(strs3[0])*t1+t2,t3-parseFloat(strs3[1])*t1);
+                    temp.push(parseFloat(strs3[0]));
+                    temp.push(parseFloat(strs3[1]));
+                }
+            }
+                context.stroke();
+                border.push(temp);//经纬度存至数组
+            } 
+            flag++;
+       }
+    }
+    flag1=0;
+}
+function calculate1(){//墨卡托投影
+    var t1=0;var t2=0;var t3=0;
+    context.clearRect(0,0,drawing.width,drawing.height);
+    context.lineWidth = 1;   
+    context.strokeStyle = "#663366";
+    if(border.length>1000){//判断文件是中国地图还是世界地图，以合适的大小缩放在画布
+        t1=35000;t2=600;t3=600;flag1=1;
+    }else{
+         t1=9000;t2=-700;t3=1100;
+    }  
+    for(var i=0;i<border.length;i++){
+        context.beginPath();//依次绘制线条
+        for(j=0;j<border[i].length;j++){
+            var x = border[i][2*j]* 20037508.34 / 180;
+            var y = Math.log(Math.tan((90 + border[i][2*j+1]) * Math.PI / 360)) / (Math.PI / 180);
+              y = y*20037508.34/180;
+              context.lineTo(x/t1+t2,t3-y/t1);
+        }
+        context.stroke();
+    }
+    context.lineWidth = 1;    
+    context.strokeStyle = "#000000";
+    for(var i=0;i<72;i++){//依次绘制经纬网
+        context.beginPath();
+        var x1 = (-180+i*5)* 20037508.34 / 180;
+        var y1 = Math.log(Math.tan((90 + 90) * Math.PI / 360)) / (Math.PI / 180);
+        y1 = y1*20037508.34/180;
+        context.lineTo(x1/t1+t2,t3-y1/t1);
+        context.lineTo(x1/t1+t2,t3+y1/t1);
+        context.stroke();
+        if(i<=36){
+        context.beginPath();
+        var x2 = (-180)* 20037508.34 / 180;
+        var y2 = Math.log(Math.tan((90 +(-90+i*5)) * Math.PI / 360)) / (Math.PI / 180);
+        y2 = y2*20037508.34/180;
+        context.lineTo(x2/t1+t2,t3-y2/t1);
+        context.lineTo(-x2/t1+t2,t3-y2/t1);
+        context.stroke();
+        }
+    }
+}
+function calculate3(){//（中国地图）兰伯特投影
+    var B1=20;var B2=40;var B0=0;var L0=105;var a=6378245;//设置基本参数
+    var e2=0.006693421622966;
+    var e=Math.sqrt(e2);
+    var tB0=Math.tan((Math.PI/4)-(B0*Math.PI/360))/Math.pow(((1-e*Math.sin(B0*Math.PI/180))/(1+e*Math.sin(B0*Math.PI/180))),e/2);
+    var tB1=Math.tan((Math.PI/4)-(B1*Math.PI/360))/Math.pow(((1-e*Math.sin(B1*Math.PI/180))/(1+e*Math.sin(B1*Math.PI/180))),e/2);
+    var tB2=Math.tan((Math.PI/4)-(B2*Math.PI/360))/Math.pow(((1-e*Math.sin(B2*Math.PI/180))/(1+e*Math.sin(B2*Math.PI/180))),e/2);
+    var mB1=Math.cos(B1*Math.PI/180)/Math.sqrt(1-Math.pow(e,2)*Math.pow(Math.sin(B1*Math.PI/180),2));
+    var mB2=Math.cos(B2*Math.PI/180)/Math.sqrt(1-Math.pow(e,2)*Math.pow(Math.sin(B2*Math.PI/180),2));
+    var n=Math.log(mB1/mB2)/Math.log(tB1/tB2);
+    var F =mB1/(n*Math.pow(tB1,n));
+    var r0=a*F*Math.pow(tB0,n);
+    context.clearRect(0,0,drawing.width,drawing.height);
+    context.lineWidth = 1;   
+    context.strokeStyle = "#663366";
+    for(var i=0;i<border.length;i++){
+        context.beginPath();//依次绘制线条
+        for(var j=0;j<border[i].length;j++){
+            var t=Math.tan(Math.PI/4-border[i][2*j+1]* Math.PI / 360)/Math.pow(((1-e*Math.sin(border[i][2*j+1]* Math.PI / 180))/(1+e*Math.sin(border[i][2*j+1]* Math.PI / 180))),e/2);
+            var r=a*F*Math.pow(t,n);
+            var theta=n*(border[i][2*j]-L0);
+            var x = r0+r*Math.cos(theta* Math.PI / 180);
+            var y = r*Math.sin(theta* Math.PI / 180);
+            context.lineTo(y/7000+600,x/7000-2900);
+        }
+        context.stroke();
+    }
+    context.lineWidth = 1;   
+    context.strokeStyle = "#000000";
+    for(var i=0;i<27;i++){//依次绘制经线
+        context.beginPath();
+        var t1=Math.tan((Math.PI/4)-(80*Math.PI/360))/Math.pow(((1-e*Math.sin(80*Math.PI/180))/(1+e*Math.sin(80*Math.PI/180))),e/2);
+        var t2=Math.tan((Math.PI/4)-(-80*Math.PI/360))/Math.pow(((1-e*Math.sin(-80*Math.PI/180))/(1+e*Math.sin(-80*Math.PI/180))),e/2);
+        var r1=a*F*Math.pow(t1,n);
+        var r2=a*F*Math.pow(t2,n);
+        var theta=n*(40+5*i-L0);
+        var x1 = r0+r1*Math.cos(theta* Math.PI / 180);
+        var y1 = r1*Math.sin(theta* Math.PI / 180);
+        var x2 = r0+r2*Math.cos(theta* Math.PI / 180);
+        var y2 = r2*Math.sin(theta* Math.PI / 180);
+        context.lineTo(y1/7000+600,x1/7000-2900);
+        context.lineTo(y2/7000+600,x2/7000-2900);
+        context.stroke();
+    }
+    for(j=0;j<20;j++){//依次绘制纬线，由于是曲线，要多选几个中间点以逼近
+        context.beginPath();
+        var t=Math.tan((Math.PI/4)-((80-j*5)*Math.PI/360))/Math.pow(((1-e*Math.sin((80-j*5)*Math.PI/180))/(1+e*Math.sin((80-j*5)*Math.PI/180))),e/2);
+        var r=a*F*Math.pow(t,n);
+        for(k=0;k<27;k++){
+            var theta=n*(40+5*k-L0);
+            var x = r0+r*Math.cos(theta* Math.PI / 180);
+            var y = r*Math.sin(theta* Math.PI / 180);
+            context.lineTo(y/7000+600,x/7000-2900);
+        }
+        context.stroke();
+    }
+    flag1=0;
+}
+function calculateMiddle(lon1,lat1,lon2,lat2){//计算大圆航线中间点
+    var bx=Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180);
+    var by=Math.cos(lat2*Math.PI/180)*Math.sin((lon2-lon1)*Math.PI/180);
+    var latm=Math.atan2((Math.sin(lat1*Math.PI/180)+Math.sin(lat2*Math.PI/180)),Math.sqrt(Math.pow((Math.cos(lat1*Math.PI/180)+bx),2)+Math.pow(by,2)));
+    var lonm=lon1*Math.PI/180+Math.atan2(by,(Math.cos(lat1*Math.PI/180)+bx));
+    var tempm=new Array();
+    tempm.push(lonm*180/Math.PI);
+    tempm.push(latm*180/Math.PI);
+    return tempm;
+}
+function calculateCircle(arr){//递归计算大圆航线途径的点，以逼近曲线
+    var temp=new Array();
+    temp.push([arr[0][0],arr[0][1]]);
+    for(var k=0;k<arr.length-1;k++){
+        temp.push(calculateMiddle(arr[k][0],arr[k][1],arr[k+1][0],arr[k+1][1]));
+        temp.push([arr[k+1][0],arr[k+1][1]]);
+    }
+    if(arr.length<17){calculateCircle(temp);}
+    else{  
+        context.lineWidth = 8;   
+        context.strokeStyle = "#996699";
+        context.beginPath();
+        for(var i=0;i<temp.length;i++){
+        var x = temp[i][0]* 20037508.34 / 180;
+        var y = Math.log(Math.tan((90+temp[i][1])*Math.PI/360))/(Math.PI/180);
+        y = y*20037508.34/180;
+        context.lineTo(x/35000+600,600-y/35000);
+    }    
+        context.stroke();
+    }
+}
+function calculate2(){//计算北京至巴黎的大圆航线
+    if(flag1==1){
+        var lon1=116.4;var lat1=39.8;//两地经纬度
+        var lon2=2.2;var lat2=48.52;
+        var line1=new Array();
+        line1.push([lon1,lat1]);
+        line1.push([lon2,lat2]);
+        calculateCircle(line1);
+    }else{
+        alert("请先打开世界地图并转换至墨卡托投影！");
+    }
+
+}
+</script>  
+</body>  
+</html>  
