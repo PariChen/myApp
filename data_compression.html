@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html>  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>地图数据压缩</title>  
+</head>  
+<body>  
+<div align="center">请选择您的*.gen格式地图数据文件：<br><br>
+<input type="file" id="file" onchange="handleFiles(this.files)"/><br><br>
+<button onClick="calculate1()">兰伯特投影</button>&nbsp;&nbsp;&nbsp;&nbsp;<button onClick="calculate2()">数据压缩</button><br>
+<p id="result1" width=400px></p>  <p id="result2" width=400px></p>  
+<canvas id="c" width="600" height="600" style="border:1px solid#c3c3c3;"></canvas>
+<canvas id="c1" width="600" height="600" style="border:1px solid#c3c3c3;"></canvas></div> 
+<script>  
+var data;
+var border= new Array(); 
+var lambert= new Array(); 
+var lambertNew= new Array(); 
+var drawing=document.getElementById("c");//选择画布  
+var context=drawing.getContext("2d"); 
+var drawing1=document.getElementById("c1");
+var context1=drawing1.getContext("2d"); 
+var count1;
+var count2;
+function handleFiles(files) {
+    border.length=0;
+    var t1=0;var t2=0;var t3=0;
+    for(var n=0;n<files.length;n++) {
+        count1=0;
+        var flag=0;
+        var file = files[n];
+        var reader = new FileReader();
+        reader.readAsText(file);//读取文件内容至字符串
+        reader.onload=function(f){
+            data=this.result;
+            context.clearRect(0,0,drawing.width,drawing.height); 
+            context.lineWidth = 1;  
+            context.strokeStyle = "#000000"; 
+            var strs1=data.split("END"); //将字符串以行为单位分割
+            t1=9;t2=-620;t3=600;
+            for (var i=0;i<strs1.length-1 ;i++ ){
+                var strs2=(strs1[i]).split("\n"); //将行以点为单位分割
+                var temp=new Array();
+                context.beginPath();//依次绘制线条
+                if(i==0){
+                    for(var j=1;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    context.lineTo(parseFloat(strs3[0])*t1+t2,t3-parseFloat(strs3[1])*t1);
+                    temp.push(parseFloat(strs3[0]));
+                    temp.push(parseFloat(strs3[1]));
+                    count1=count1+2;
+                }
+                }else{
+                for(var j=2;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    context.lineTo(parseFloat(strs3[0])*t1+t2,t3-parseFloat(strs3[1])*t1);
+                    temp.push(parseFloat(strs3[0]));
+                    temp.push(parseFloat(strs3[1]));
+                    count1=count1+2;
+                }
+            }
+                context.stroke();
+                border.push(temp);//经纬度存至数组
+            } 
+            flag++;
+       }
+       
+    }
+    
+} 
+    var B1=20;var B2=40;var B0=0;var L0=105;var a=6378245;//设置基本参数
+    var e2=0.006693421622966;
+    var e=Math.sqrt(e2);
+    var tB0=Math.tan((Math.PI/4)-(B0*Math.PI/360))/Math.pow(((1-e*Math.sin(B0*Math.PI/180))/(1+e*Math.sin(B0*Math.PI/180))),e/2);
+    var tB1=Math.tan((Math.PI/4)-(B1*Math.PI/360))/Math.pow(((1-e*Math.sin(B1*Math.PI/180))/(1+e*Math.sin(B1*Math.PI/180))),e/2);
+    var tB2=Math.tan((Math.PI/4)-(B2*Math.PI/360))/Math.pow(((1-e*Math.sin(B2*Math.PI/180))/(1+e*Math.sin(B2*Math.PI/180))),e/2);
+    var mB1=Math.cos(B1*Math.PI/180)/Math.sqrt(1-Math.pow(e,2)*Math.pow(Math.sin(B1*Math.PI/180),2));
+    var mB2=Math.cos(B2*Math.PI/180)/Math.sqrt(1-Math.pow(e,2)*Math.pow(Math.sin(B2*Math.PI/180),2));
+    var n=Math.log(mB1/mB2)/Math.log(tB1/tB2);
+    var F =mB1/(n*Math.pow(tB1,n));
+    var r0=a*F*Math.pow(tB0,n);
+function calculate1(){//（中国地图）兰伯特投影
+
+    context.clearRect(0,0,drawing.width,drawing.height);
+    context.lineWidth = 1;   
+    context.strokeStyle = "#663366";
+    for(var i=0;i<border.length;i++){
+        context.beginPath();//依次绘制线条
+        var temp1=new Array();
+        for(var j=0;j<border[i].length/2;j++){
+            var t=Math.tan(Math.PI/4-border[i][2*j+1]* Math.PI / 360)/Math.pow(((1-e*Math.sin(border[i][2*j+1]* Math.PI / 180))/(1+e*Math.sin(border[i][2*j+1]* Math.PI / 180))),e/2);
+            var r=a*F*Math.pow(t,n);
+            var theta=n*(border[i][2*j]-L0);
+            var x = r0+r*Math.cos(theta* Math.PI / 180);
+            var y = r*Math.sin(theta* Math.PI / 180);
+            context.lineTo(y/9600+300,x/9600-2320);
+            temp1.push(x);
+            temp1.push(y);
+        }
+        context.stroke();
+        lambert.push(temp1);
+    }
+    context.lineWidth = 1;   
+    context.strokeStyle = "#000000";
+    for(var i=0;i<27;i++){//依次绘制经线
+        context.beginPath();
+        var t1=Math.tan((Math.PI/4)-(80*Math.PI/360))/Math.pow(((1-e*Math.sin(80*Math.PI/180))/(1+e*Math.sin(80*Math.PI/180))),e/2);
+        var t2=Math.tan((Math.PI/4)-(-80*Math.PI/360))/Math.pow(((1-e*Math.sin(-80*Math.PI/180))/(1+e*Math.sin(-80*Math.PI/180))),e/2);
+        var r1=a*F*Math.pow(t1,n);
+        var r2=a*F*Math.pow(t2,n);
+        var theta=n*(40+5*i-L0);
+        var x1 = r0+r1*Math.cos(theta* Math.PI / 180);
+        var y1 = r1*Math.sin(theta* Math.PI / 180);
+        var x2 = r0+r2*Math.cos(theta* Math.PI / 180);
+        var y2 = r2*Math.sin(theta* Math.PI / 180);
+        context.lineTo(y1/9600+300,x1/9600-2320);
+        context.lineTo(y2/9600+300,x2/9600-2320);
+        context.stroke();
+    }
+    for(j=0;j<20;j++){//依次绘制纬线，由于是曲线，要多选几个中间点以逼近
+        context.beginPath();
+        var t=Math.tan((Math.PI/4)-((80-j*5)*Math.PI/360))/Math.pow(((1-e*Math.sin((80-j*5)*Math.PI/180))/(1+e*Math.sin((80-j*5)*Math.PI/180))),e/2);
+        var r=a*F*Math.pow(t,n);
+        for(k=0;k<27;k++){
+            var theta=n*(40+5*k-L0);
+            var x = r0+r*Math.cos(theta* Math.PI / 180);
+            var y = r*Math.sin(theta* Math.PI / 180);
+            context.lineTo(y/9600+300,x/9600-2320);
+        }
+        context.stroke();
+    }
+    document.getElementById("result1").innerHTML="压缩前总点数："+count1;
+}
+function calDistance(x1,y1,x2,y2,x0,y0){
+    return (Math.abs((y2 - y1) * x0 +(x1 - x2) * y0 + ((x2 * y1) -(x1 * y2)))) / (Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x1 - x2, 2)));
+}
+
+function calculate2(){
+    count2=0;
+    for(var i=0;i<lambert.length;i++){
+        var tempPoint=new Array();
+        if(lambert[i].length>40){
+            var j;
+        for(j=0;j<parseInt(lambert[i].length/20);j++){
+            var maxDistance=0;
+            var t=new Array();
+            for(var i1=1;i1<8;i1++){
+                if(j*20+2*i1+1<lambert[i].length){
+                var dis=calDistance(lambert[i][j*20],lambert[i][j*20+1],lambert[i][j*20+18],lambert[i][j*20+18+1],lambert[i][j*20+2*i1],lambert[i][j*20+2*i1+1]);
+                t.push(dis);
+                }
+            }
+            t.sort();
+            maxDistance=t[parseInt(t.length/2)+1];
+            tempPoint.push(lambert[i][j*20]);
+            tempPoint.push(lambert[i][j*20+1]);
+            count2=count2+2;
+            for(var k=1;k<8;k++){
+                if(j*20+2*k+1<lambert[i].length){
+                if(calDistance(lambert[i][j*20],lambert[i][j*20+1],lambert[i][j*20+18],lambert[i][j*20+19],lambert[i][j*20+2*k],lambert[i][j*20+2*k+1])>maxDistance){
+                    tempPoint.push(lambert[i][j*20+2*k]);
+                    tempPoint.push(lambert[i][j*20+2*k+1]);
+                    count2=count2+2;
+                }}
+            }
+            tempPoint.push(lambert[i][j*20+18]);
+            tempPoint.push(lambert[i][j*20+19]);
+            count2=count2+2;
+        }
+        for(var k2=j*20;k2<lambert[i].length-1;k2=k2+2){
+            tempPoint.push(lambert[i][k2]);
+            tempPoint.push(lambert[i][k2+1]);
+            count2=count2+2;
+        }
+        lambertNew.push(tempPoint);
+    }else{
+        for(var j=0;j<lambert[i].length/2;j++){
+            tempPoint.push(lambert[i][j*2]);
+            tempPoint.push(lambert[i][j*2+1]);
+            count2=count2+2;
+        }
+        lambertNew.push(tempPoint);
+    }
+    }
+    context1.lineWidth = 1;   
+    context1.strokeStyle = "#000000";
+    for(var i=0;i<lambertNew.length;i++){
+        context1.beginPath();//依次绘制线条
+        for(var j=0;j<lambertNew[i].length/2;j++){
+            context1.lineTo(lambertNew[i][2*j+1]/9600+300,lambertNew[i][2*j]/9600-2320);
+        }
+        context1.stroke();
+    }
+    for(var i=0;i<27;i++){//依次绘制经线
+        context1.beginPath();
+        var t1=Math.tan((Math.PI/4)-(80*Math.PI/360))/Math.pow(((1-e*Math.sin(80*Math.PI/180))/(1+e*Math.sin(80*Math.PI/180))),e/2);
+        var t2=Math.tan((Math.PI/4)-(-80*Math.PI/360))/Math.pow(((1-e*Math.sin(-80*Math.PI/180))/(1+e*Math.sin(-80*Math.PI/180))),e/2);
+        var r1=a*F*Math.pow(t1,n);
+        var r2=a*F*Math.pow(t2,n);
+        var theta=n*(40+5*i-L0);
+        var x1 = r0+r1*Math.cos(theta* Math.PI / 180);
+        var y1 = r1*Math.sin(theta* Math.PI / 180);
+        var x2 = r0+r2*Math.cos(theta* Math.PI / 180);
+        var y2 = r2*Math.sin(theta* Math.PI / 180);
+        context1.lineTo(y1/9600+300,x1/9600-2320);
+        context1.lineTo(y2/9600+300,x2/9600-2320);
+        context1.stroke();
+    }
+    for(j=0;j<20;j++){//依次绘制纬线，由于是曲线，要多选几个中间点以逼近
+        context1.beginPath();
+        var t=Math.tan((Math.PI/4)-((80-j*5)*Math.PI/360))/Math.pow(((1-e*Math.sin((80-j*5)*Math.PI/180))/(1+e*Math.sin((80-j*5)*Math.PI/180))),e/2);
+        var r=a*F*Math.pow(t,n);
+        for(k=0;k<27;k++){
+            var theta=n*(40+5*k-L0);
+            var x = r0+r*Math.cos(theta* Math.PI / 180);
+            var y = r*Math.sin(theta* Math.PI / 180);
+            context1.lineTo(y/9600+300,x/9600-2320);
+        }
+        context1.stroke();
+    }
+    document.getElementById("result2").innerHTML="压缩后总点数："+count2+" ，压缩率"+count2/count1*100+"%";
+}
+</script>  
+</body>  
+</html>  
