@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>多边形拓扑生成</title>  
+</head>  
+<body>  
+    <div align="center">请选择您的*.gen格式文件：<br>
+<p id="result"></p>
+<input type="file" id="file"  onchange="handleFiles(this.files)"/><br><br>
+<canvas id="c" width="300" height="300" style="border:1px solid#c3c3c3;"></canvas> <br> <br>
+<button onClick="calculate1()">多边形拓扑生成</button> <br> <br>
+<table border="3">
+    <tr>
+       <td><div class="text" style=" text-align:center;" >&nbsp;&nbsp;多边形编号&nbsp;&nbsp;</div></td>
+       <td><div class="text" style=" text-align:center;" >&nbsp;&nbsp;&nbsp;弧段编号&nbsp;&nbsp;&nbsp;</div></td>
+    </tr>
+    <tr>
+        <td><div align="center"><p id="result1" width=300px></p></div></td>
+        <td><div align="center"><p id="result2" width=500px></p></div></td>
+    </tr>
+</table></div>
+<script>  
+var data;
+var drawing=document.getElementById("c");//选择画布  
+var context=drawing.getContext("2d"); 
+var arcs= new Array(); //边表，每个元素结构{points：[[x1,y1],[x2,y2],...],used：[0,0]}，存储读入文件的边信息，每条边设置两个used属性记录正反向使用情况
+var point_arc=new Array();//结点-边表，每个元素结构{point：[x,y],arc:[n1,-n2,n6...]},存储每个结点坐标及从这个结点出发的边在arcs表中的序号（用正负号区分）
+var polygons=new Array();//多边形表，每个元素存储组成一个多边形的边的序号（用正负号区分）
+function calculate1(){//主函数
+    findArc();
+    for(var i=0;i<point_arc.length;i++){
+        PositionAngle(point_arc[i].arc);
+    }
+    Polygon_Arc();
+    CheckIsland();
+    DrawPolygon();
+    document.getElementById("result1").innerHTML='';
+    document.getElementById("result2").innerHTML='';
+    for (var i=0;i<polygons.length;i++){
+        for (var j=0;j<polygons[i].length-1;j++){
+        document.getElementById("result2").innerHTML+='N'+polygons[i][j]+",";
+    }
+    document.getElementById("result2").innerHTML+='N'+polygons[i][polygons[i].length-1]+"<br>";
+    document.getElementById("result1").innerHTML+=i+1+"<br>";
+    } 
+    document.getElementById("result1").innerHTML+="<br><br>";
+    document.getElementById("result2").innerHTML+="<br>(负号指此边相对于储存顺序为反向)<br>";
+}
+function handleFiles(files) {//读取文件
+    arcs.length=0;
+    point_arc.length=0;
+    polygons.length=0;
+    for(var n=0;n<files.length;n++) {
+        var flag=0;
+        var file = files[n];
+        var reader = new FileReader();
+        context.clearRect(0,0,drawing.width,drawing.height); 
+        context.strokeStyle = 'rgb(1,1,1)';
+        reader.readAsText(file);//读取文件内容至字符串
+        reader.onload=function(f){
+            data=this.result;
+            var strs1=data.split("END"); //将字符串以行为单位分割
+            for (var i=0;i<strs1.length-2 ;i++ ){
+                var strs2=(strs1[i]).split("\n"); //将行以点为单位分割
+                var temp={points:[],used:[0,0]};
+                //var temp=new Array();
+                context.beginPath();//依次绘制线条
+                if(i==0){
+                    for(var j=1;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    context.lineTo(parseFloat(strs3[0])*1.5-7,400-parseFloat(strs3[1])*1.5);
+                    temp.points.push([parseFloat(strs3[0]),parseFloat(strs3[1])]);
+                    //temp.push(parseFloat(strs3[1]));
+                }
+                }else{
+                for(var j=2;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    context.lineTo(parseFloat(strs3[0])*1.5-7,400-parseFloat(strs3[1])*1.5);
+                    temp.points.push([parseFloat(strs3[0]),parseFloat(strs3[1])]);
+                    //temp.push(parseFloat(strs3[1]));
+                }}
+                context.stroke();
+                arcs.push(temp);
+            } 
+            flag++;
+       }
+    }
+}     
+function findArc(){//找到每一个结点对应的所有边
+        var flag=new Array();
+    for(var i=0;i<arcs.length;i++){
+        flag.push([0,0]);
+    }
+    for(var i=0;i<arcs.length;i++){
+        if(flag[i][0]==0){
+            var temp={point:[],arc:[]};
+            temp.point.push(arcs[i].points[0][0]);temp.point.push(arcs[i].points[0][1]);
+            temp.arc.push(i+1);
+            flag[i][0]=1;
+            for(var j=0;j<arcs.length;j++){
+                if(flag[j][0]==0){
+                    if(arcs[i].points[0][0]==arcs[j].points[0][0]&&arcs[i].points[0][1]==arcs[j].points[0][1]){
+                        temp.arc.push(j+1);
+                        flag[j][0]=1;
+                    }
+                }
+                if(flag[j][1]==0){
+                    if(arcs[i].points[0][0]==arcs[j].points[arcs[j].points.length-1][0]&&arcs[i].points[0][1]==arcs[j].points[arcs[j].points.length-1][1]){
+                       temp.arc.push(-(j+1));  
+                       flag[j][1]=1;
+                    }
+                }
+            }
+            point_arc.push(temp);
+        }
+        if(flag[i][1]==0){
+            var temp={point:[],arc:[]};
+            //temp.point=new Array();
+           // temp.arc=new Array();
+            temp.point.push(arcs[i].points[arcs[i].points.length-1][0]);temp.point.push(arcs[i].points[arcs[i].points.length-1][1]);
+            temp.arc.push(-(i+1));
+            flag[i][1]=1;
+            for(var j=0;j<arcs.length;j++){
+                if(flag[j][0]==0){
+                    if(arcs[i].points[arcs[i].points.length-1][0]==arcs[j].points[0][0]&&arcs[i].points[arcs[i].points.length-1][1]==arcs[j].points[0][1]){
+                        temp.arc.push(j+1);
+                        flag[j][0]=1;
+                    }
+                }
+                if(flag[j][1]==0){
+                    if(arcs[i].points[arcs[i].points.length-1][0]==arcs[j].points[arcs[j].points.length-1][0]&&arcs[i].points[arcs[i].points.length-1][1]==arcs[j].points[arcs[j].points.length-1][1]){
+                       temp.arc.push(-(j+1));  
+                       flag[j][1]=1;
+                    }
+                }
+            }
+            point_arc.push(temp);
+        }
+    }
+}
+function PositionAngle(number){//计算方位角，对于一个结点按从小到大排序边
+    var i,j;  
+    //只对开始两个点组成的线段进行计算  
+    var angle=new Array();  
+    for( i=0;i<number.length;i++)  {  
+        if(number[i]>0){
+            var dety=arcs[number[i]-1].points[1][1]-arcs[number[i]-1].points[0][1];  
+            var detx=arcs[number[i]-1].points[1][0]-arcs[number[i]-1].points[0][0];  
+        }else{
+            var dety=arcs[-number[i]-1].points[arcs[-number[i]-1].points.length-2][1]-arcs[-number[i]-1].points[arcs[-number[i]-1].points.length-1][1];  
+            var detx=arcs[-number[i]-1].points[arcs[-number[i]-1].points.length-2][0]-arcs[-number[i]-1].points[arcs[-number[i]-1].points.length-1][0]; 
+        }
+        var degree=Math.atan(dety/detx)*180/Math.PI;   
+        //90-180  
+        if(detx<0 & dety>=0)  {  
+            degree+=180;  
+        }  
+        //180-270  
+        else if(detx<0 &dety<0)  {  
+            degree+=180;  
+        }  
+        //270-360
+        else if(detx>=0 & dety<0)  {  
+            degree+=360;  
+        }  
+        angle.push(degree);  
+    }  
+    for(i=0;i<number.length;i++) {  
+        for(j=i+1;j<number.length;j++)  {  
+            //交换位置  
+            if(angle[i]>angle[j]) {  
+                var tempa=angle[i];angle[i]=angle[j];angle[j]=tempa;//方位角交换位置  
+                var tempn=number[i];number[i]=number[j];number[j]=tempn; 
+            }  
+        }  
+    }  
+}  
+function AllUse(){//判断所有结点是否都被使用，是返回true,否则返回false 
+        for(var i=0;i<point_arc.length;i++) {  
+            for(var j=0;j<point_arc[i].arc.length;j++)  {
+                if(point_arc[i].arc[j]>0){
+                    if(arcs[point_arc[i].arc[j]-1].used[0]==0)  
+                    return false;   
+                }else{
+                    if(arcs[-point_arc[i].arc[j]-1].used[1]==0)  
+                    return false;    
+                }
+  
+            }  
+        } 
+        return true; 
+} 
+function NodeUse(i){//判断某个结点的边是否全部使用，是返回true,否则返回false
+    for(var j=0;j<point_arc[i].arc.length;j++)  {
+        if(Usage(i,j)==false){
+            return false;
+        }
+    } 
+    return true;
+}
+function CheckIsland(){//判断岛是否存在
+    for(var i=0;i<polygons.length;i++){
+        var temp=polygons[i];
+        for(var j=i+1;j<polygons.length;j++){
+            if(temp.length==polygons[j].length){
+                if(temp[0]==-polygons[j][polygons[j].length-1]){
+                    polygons.splice(j,1);
+                    if(temp[0]==temp[1]){
+                        polygons[i].splice(1,1);
+                    }
+                }
+            }
+        }
+    }
+}
+function Priority(i,j){//若相关边未使用过，且反向边已使用过，则返回边在结点中位置,否则返回false(i:结点编号，j:边在结点中位置)
+        for(j=1;j<=point_arc[i].point.length;j++)  
+        {  
+            if(ReverseUsage(i,j)&!Usage(i,j))  return j;  
+        }  
+}   
+function ReverseUsage(m,n){//判断某条边的反向边是否被使用过，使用过返回true,否则返回false.(m:结点编号，n:边在结点中位置)
+       var temp=point_arc[m].arc[n];
+       if(temp>0){
+           if(arcs[temp-1].used[1]==1) return true;
+       }else{
+           if(arcs[-temp-1].used[0]==1) return true;
+       }  
+        return false;  
+}  
+function Usage(m,n){//判断某条边是否被使用过，使用过返回true,否则返回false.(m:结点编号，n:边在结点中位置)
+       var temp=point_arc[m].arc[n];
+       if(temp>0){
+           if(arcs[temp-1].used[0]==1) return true;
+       }else{
+           if(arcs[-temp-1].used[1]==1) return true;
+       }  
+        return false;  
+}  
+function AddArc(towrite,polygon){//写入弧段至多边形
+    polygon.push(towrite);  
+        if(towrite>0){
+            arcs[towrite-1].used[0]=1;
+        }else{
+            arcs[-towrite-1].used[1]=1;
+    } 
+}  
+function Location(m,n){//找此弧段的下一个弧段在point_arc表中的位置
+    var loc=new Array();  
+    var u,v;
+    var number=point_arc[m].arc[n];
+    var endx,endy;
+    if(number>0){
+        endx=arcs[number-1].points[arcs[number-1].points.length-1][0];
+        endy=arcs[number-1].points[arcs[number-1].points.length-1][1];
+    }else{
+        endx=arcs[-number-1].points[0][0];
+        endy=arcs[-number-1].points[0][1];
+    }
+    //寻找到结束点的位置，并修改i,j  
+    for(u=0;u<point_arc.length;u++)  {  
+        if(point_arc[u].point[0]==endx && point_arc[u].point[1]==endy)  {  
+            loc[0]=u;  
+                break;  
+        }  
+    }  
+    for(v=0;v<point_arc[u].arc.length;v++)  {  
+        if(point_arc[m].arc[n]==-point_arc[u].arc[v])  {  
+                loc[1]=v;  
+                break;  
+        }  
+    }  
+    return loc;  
+} 
+function Polygon_Arc(){//拓扑生成 
+    var i,j,k,m,n,u,v;
+    //按从小到大的顺序选择结点,i 结点编号，j对应结点的弧端编号，k多边形编号  
+    here1:
+    for(i=0,j=0,k=0;i<point_arc.length;)  
+    {  
+        //存储同一个多边形的多条边  
+        var polygon_arc=new Array();  
+        //如果全部使用过，则调至下个结点  
+     here2: for(;;){
+            if(AllUse()){  
+            break here1;  
+        }  
+        if(NodeUse(i)){  
+            i++;  
+            //break here2;
+            break;  
+        }  
+        //选择方位角最小的边，优先性最高  
+        //var f1=0;
+        for(;;){
+        if(Usage(i,0)==false) //方位角最小的边存在  
+        {  
+            AddArc(point_arc[i].arc[j],polygon_arc);  
+            var temploc=Location(i,j);  //寻找弧端位置，ij[0]表示节点位置，ij[1]表示弧端在节点中的位置
+            i=temploc[0],j=temploc[1];
+            //f1=1;
+           // break here3;  
+           break;
+        }  
+        //对所有剩余点选择已使用过一次的边，优先性其次，应当将方位角最小的排除在外  
+        else if(Priority(i,j)>0)   {  
+            j=Priority(i,j);
+            AddArc(point_arc[i].arc[j],polygon_arc);  
+            var temploc=Location(i,j);   
+            i=temploc[0],j=temploc[1];  
+           // f1=1;
+            //break here3; 
+            break; 
+        }  
+        //上述条件不符合，优先性最后  
+        else  { 
+            if(Usage(i,j)==false){
+            AddArc(point_arc[i].arc[j],polygon_arc);  
+            var temploc=Location(i,j);  
+            i=temploc[0],j=temploc[1];
+        }else{
+            j++;
+        }
+           // f1=1;  
+            //break here3; 
+            break; 
+        }            
+       }
+        here3://判断进入的边是否是Max  
+        for(;;){
+        if(j==point_arc[i].arc.length-1)  
+            {  
+                var temp0=point_arc[i].arc[0];
+                AddArc(temp0,polygon_arc);  
+                var temploc=Location(i,0);  
+                i=temploc[0],j=temploc[1];  
+            }  
+            //逆时针寻找  
+            else  
+            {  
+                var tempj=point_arc[i].arc[j+1];
+                AddArc(tempj,polygon_arc);  
+                var temploc=Location(i,j+1);  
+                i=temploc[0],j=temploc[1];  
+            }  
+  
+            //判断是否回到起点  
+            var end=polygon_arc[polygon_arc.length-1];
+            var start=polygon_arc[0];
+            var endx,endy,startx,starty;
+            if(end>0){
+                endx=arcs[end-1].points[arcs[end-1].points.length-1][0];
+                endy=arcs[end-1].points[arcs[end-1].points.length-1][1];
+            }else{
+                endx=arcs[-end-1].points[0][0];
+                endy=arcs[-end-1].points[0][1];
+            }
+            if(start>0){
+                startx=arcs[start-1].points[0][0];
+                starty=arcs[start-1].points[0][1];
+            }else{
+                startx=arcs[-start-1].points[arcs[-start-1].points.length-1][0];
+                starty=arcs[-start-1].points[arcs[-start-1].points.length-1][1];
+            }
+            if((startx==endx)&&(starty==endy))  
+            {  
+                //完成多边形的构建，结束本次构建  
+                //polygon_arc onepolygon={k,polygon_arc};  
+                polygons.push(polygon_arc);  
+                k++;//k为多边形编号  
+                continue here1;  
+            }  
+    }
+    }
+    }
+}
+function DrawPolygon(){//绘制填充多边形
+    context.clearRect(0,0,drawing.width,drawing.height);
+    for(var i=0;i<polygons.length;i++){
+        context.beginPath();
+        context.strokeStyle = 'rgba(255,255,255,0)';
+        for(var j=0;j<polygons[i].length;j++){
+            if(polygons[i][j]>0){
+                var temp=arcs[polygons[i][j]-1].points;
+                for(var k=0;k<temp.length;k++){
+                    context.lineTo(temp[k][0]*1.5-7,400-temp[k][1]*1.5);
+            }  
+            }else{
+                var temp=arcs[-polygons[i][j]-1].points;
+                for(var k=temp.length-1;k>0;k--){
+                    context.lineTo(temp[k][0]*1.5-7,400-temp[k][1]*1.5);
+            }  
+            }        }
+        context.stroke();
+        context.fillStyle ="rgba("+Math.floor(Math.random()*256)+','+Math.floor(Math.random()*256)+','+Math.floor(Math.random()*256)+','+0.3+")";//填充半透明
+        context.fill();
+       
+        
+    }
+}
+</script>  
+</body>  
+</html>  
