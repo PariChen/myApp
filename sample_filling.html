@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>地图符号填充</title>  
+</head>  
+<body>  
+<div align="center">请选择您的*.gen格式地图数据文件：<br><br>
+<input type="file" id="file" multiple="multiple" onchange="handleFiles(this.files)"/><br><br>
+<button onClick="calculate1()">地图符号填充</button><br>
+<canvas id="c1" width="800" height="600" style="border:1px solid#c3c3c3;"></canvas></div> 
+<script>  
+var data;
+var border= new Array(); 
+var drawing=document.getElementById("c1");//选择画布  
+var context=drawing.getContext("2d"); 
+var imageTexture1 =new Image();;
+imageTexture1.src = "https://parichen.github.io/myApp/Demo1.png";
+var imageTexture2 =new Image();;
+imageTexture2.src = "https://parichen.github.io/myApp/Demo2.png";
+function handleFiles(files) {
+    border.length=0;
+    for(var n=0;n<files.length;n++) {
+        count1=0;
+        var flag=0;
+        var file = files[n];
+        var reader = new FileReader();
+        reader.readAsText(file);//读取文件内容至字符串
+        reader.onload=function(f){
+            data=this.result;
+            //context.clearRect(0,0,drawing.width,drawing.height); 
+            context.lineWidth = 1;  
+            var strs1=data.split("END"); //将字符串以行为单位分割
+            var temp2=new Array();
+            for (var i=0;i<strs1.length-1 ;i++ ){ 
+                var strs2=(strs1[i]).split("\n"); //将行以点为单位分割
+                var temp1=new Array();
+                context.beginPath();//依次绘制线条
+                if(i==0){
+                    for(var j=1;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    var t1=(parseFloat(strs3[0])/1000-430)*3000+25;
+                    var t2=1820-(parseFloat(strs3[1])/1000-3260)*3000;
+                    context.lineTo(t1,t2);
+                    temp1.push([t1,t2]);
+                }
+                }else{
+                for(var j=2;j<strs2.length-1;j++){
+                    var strs3=strs2[j].split(","); 
+                    var t1=(parseFloat(strs3[0])/1000-430)*3000+25;
+                    var t2=1820-(parseFloat(strs3[1])/1000-3260)*3000;
+                    context.lineTo(t1,t2);
+                    temp1.push([t1,t2]);
+                }
+            }
+                context.stroke();
+                temp2.push(temp1);//坐标存至数组
+            } 
+            flag++;
+            border.push(temp2);
+       }  
+    } 
+} 
+
+function calculate1(){//填充符号
+    context.clearRect(0,0,drawing.width,drawing.height); 
+        for(var i=0;i<border.length;i++){
+            var imageTexture = new Image();
+            if(border[i].length<400){
+                context.strokeStyle='rgb(50,205,50)';
+                imageTexture=imageTexture2;
+            }else{
+                context.strokeStyle='rgb(1,1,1)';
+                imageTexture=imageTexture1;
+            }
+            var woodfill = context.createPattern(imageTexture,"repeat");
+            context.fillStyle = woodfill;
+            if(imageTexture.complete){
+            for(var j=0;j<border[i].length;j++){
+            context.beginPath();
+            for(var k=0;k<border[i][j].length;k++){
+                context.lineTo(border[i][j][k][0],border[i][j][k][1]);
+            }
+            context.stroke();
+            context.fill();
+        }
+        }
+    }
+}
+
+</script>  
+</body>  
+</html>  
